@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat System</title>
+    <style>
+        @font-face {
+            font-family: "quicksand";
+            src: url("../../quicksand.ttf");
+        }
+
+        html {
+            font-family: quicksand, sans-serif;
+        }
+
+        input {
+            font-family: quicksand, sans-serif;
+        }
+
+        div {
+            font-family: quicksand, sans-serif;
+        }
+
+        #chatbox {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat System</h1>
+    
+    <div id="chatbox"></div>
+    
+    <div class="message-tools">
+        <input type="text" id="username" placeholder="Enter your username" maxlength="20">
+        <input type="text" id="message" placeholder="Enter your message" maxlength="100">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <div class="server">
+        <input type="text" id="cracked-server" placeholder="Custom Server IP (Leave Blank For Default Servers)">
+        <input type="text" id="port" placeholder="Custom Port">
+        <input type="text" id="server" placeholder="Enter server ID" maxlength="4">
+        <input type="password" id="server-password" placeholder="Server Password" maxlength="10">
+    </div>
+    
+    <script>
+        var chatbox = document.getElementById("chatbox");
+        var usernameInput = document.getElementById("username");
+        var messageInput = document.getElementById("message");
+        var serverIp = document.getElementById("cracked-server");
+        var serverId = document.getElementById("server");
+        var serverPassword = document.getElementById("server-password");
+        var portObj = document.getElementById("port");
+
+        function sendMessage() {
+            const defaultIp = "127.0.0.1"
+            const defaultPort = "8080"
+
+            var username = usernameInput.value;
+            var message = messageInput.value;
+            var crackedServerIp = serverIp.value;
+            var reqServerId = serverId.value;
+            var password = serverPassword.value;
+            var port = portObj.value;
+            let clientIp;
+            var socket;
+
+            if (username === "" || message === "") {
+                return;
+            }
+
+            var chatEntry = document.createElement("p");
+            chatEntry.innerHTML = `${username} : ${message}`;
+            chatbox.appendChild(chatEntry);
+            messageInput.value = "";
+            messageInput.focus();
+
+            fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(data => {
+                if (crackedServerIp === "") {
+                    crackedServerIp = defaultIp;
+                }
+
+                if (port === "") {
+                    port = defaultPort;
+                }
+
+                clientIp = data.ip;
+                console.log('IP address:', clientIp);
+                
+                try {
+                    if (clientIp !== "" && username !== "" && message !== "") {
+                        console.log(`${clientIp}|${username}|${reqServerId}|${password}|${message}`);
+                        socket = new WebSocket(`ws://${crackedServerIp}:${port}`);
+
+                        socket.onmessage = function (event) {
+                            var chatbox = document.getElementById('chatbox');
+                            chatbox.innerHTML = '';
+
+                            var response = event.data;
+                            var parsedResponse = response.split("§")
+                            for (let x = 0; x < parsedResponse.length; x++){
+                                var chatResponse = document.createElement("p");
+                                chatResponse.textContent = parsedResponse[x];
+                                chatbox.appendChild(chatResponse);
+                            }
+                        };
+
+                        socket.onopen = function () {
+                            socket.send(`${clientIp}|${username}|${reqServerId}|${password}|${message}`);
+                        };
+                    } else {
+                        throw new Error('Missing required values');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+
+        }
+    </script>
+</body>
+</html>
